@@ -1,4 +1,4 @@
-import pygame, sys
+import pygame, sys, threading
 
 pygame.init()
 pygame.font.init()
@@ -12,80 +12,80 @@ pygame.display.set_caption("Mäng")
 # Ekraan
 ekraan_suurus = (1620, 900)  # kui suur on aken kus mäng toimub
 aken = pygame.display.set_mode(ekraan_suurus)
+time = 0
 
 # Mõned värvid
 must = (0, 0, 0)
 valge = (255, 255, 255)
 punane = (255, 0, 0)
 
-# Peategelane
-mikro = pygame.image.load('main_character.png')
-mikro_suurus = (200, 200)
-mikro = pygame.transform.scale(mikro, mikro_suurus)
-mikro_pos = [300, 300]  # Algpositsioon ekraani keskel
-mikro_speed = [0, 0]  # Speed for x and y directions
+class Objekt:
+    def __init__(self, sprite, pos = None, speed = None, scale = None):
+        self.speed = speed or [0,0]
+        self.pos = pos or [0, 0]
+        self.scale = scale
+        self.sprite = pygame.image.load(sprite)
+        if self.scale is not None:
+            self.sprite = pygame.transform.scale(self.sprite, self.scale)
+    def render(self):
+        self.pos = [i + j for i, j in zip(self.pos, self.speed)]
+        aken.blit(self.sprite, self.pos)
+    def __str__(self):
+        aken.blit(self.sprite, self.pos)
 
-# Taust
-taust = pygame.image.load('ART/background.jpg')
-taust = pygame.transform.scale(taust, (3240, 900))  # Pikk taust (2x ekraan)
-taust_pos = [0, 0]
 
-# Brush
-brush = pygame.Surface((10, 10))  # Brush size
-brush.fill(punane)  # Color of the brush
-brush_positions = []  # List to store all the brush positions drawn
 
+class Pintsel(Objekt):
+    def render(self):
+        mouse_pos = pygame.mouse.get_pos()
+        self.pos = [mouse_pos[0], mouse_pos[1]-self.sprite.get_height()]
+        super().render()
+class Värv(Objekt):
+    brush = pygame.Surface((10, 10))  # Brush size
+    brush.fill(punane)  # Color of the brush
+    brush_positions = []  # List to store all the brush positions drawn
+
+taust = Objekt('ART/background.jpg')
+mikro = Objekt("main_character.png", pos=[100,100], scale=(200,200))
+pintsel = Pintsel("placeholder.png", scale=(100,100) )
 # Mängu tsükkel
+joonistab = False
 while True:
-    # Täidame ekraani mustaga
-    aken.fill(must)
-
-    # Joonistame tausta
-    aken.blit(taust, taust_pos)
-    aken.blit(taust, (taust_pos[0] + 1620, taust_pos[1]))  # Taust kõrvuti
-
-    # Kui taust liigub liiga kaugele, reset
-    if taust_pos[0] <= -1620:
-        taust_pos[0] = 0
-
-    # Liigutame tausta vastupidiselt tegelase liikumisele
-    taust_pos[0] -= mikro_speed[0]
-
-    # Joonistame mikrouuni
-    mikro_pos[1] += mikro_speed[1]
-    aken.blit(mikro, mikro_pos)
-
-    # Joonistame pintsliga jooned
-    for pos in brush_positions:
-        aken.blit(brush, pos)
-
-    # Sõlmime sõndmused
+    taust.render()
+    mikro.render()
+    if joonistab:
+        pintsel.render()
+    #iga kord kui on sündmus
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+        #quit event
+        if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             pygame.quit()
             sys.exit()
+        #klaviatuuri nupp alla
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                pygame.quit()
-                sys.exit()
-            elif event.key == pygame.K_UP or event.key == pygame.K_w:
-                mikro_speed[1] = -5
-            elif event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                mikro_speed[1] = 5
-            elif event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                mikro_speed[0] = -5
-            elif event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                mikro_speed[0] = 5
-            elif event.key == pygame.K_SPACE:  # Spacebar to start drawing a line
-                # Get mouse position
-                mouse_pos = pygame.mouse.get_pos()
-                brush_positions.append(mouse_pos)  # Start drawing at the mouse position
-
+            if event.key == pygame.K_UP or event.key == pygame.K_w:
+                mikro.speed[1] = -5
+            if event.key == pygame.K_DOWN or event.key == pygame.K_s:
+                mikro.speed[1] = 5
+            if event.key == pygame.K_LEFT or event.key == pygame.K_a:
+                mikro.speed[0] = -5
+            if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
+                mikro.speed[0] = 5
+        #klaviatuuri nupp üles
         elif event.type == pygame.KEYUP:
             if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
-                mikro_speed[1] = 0
-            elif event.key in [pygame.K_LEFT, pygame.K_a, pygame.K_RIGHT, pygame.K_d]:
-                mikro_speed[0] = 0
+                mikro.speed[1] = 0
+            if event.key in [pygame.K_LEFT, pygame.K_a, pygame.K_RIGHT, pygame.K_d]:
+                mikro.speed[0] = 0
+
+        #hiire nupp alla
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == pygame.BUTTON_LEFT:
+                joonistab = True
+        #hiire nupp üles
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == pygame.BUTTON_LEFT:
+                joonistab = False
 
     # Uuendame ekraani
     pygame.display.flip()
