@@ -1,6 +1,6 @@
 import pygame, sys, threading, math
 from pygame.transform import scale
-import keybinds as kb # file kus on kõikkeybindid
+import keybinds as kb # file kus on kõik keybindid
 pygame.init()
 pygame.font.init()
 
@@ -11,9 +11,9 @@ FPS = 60
 pygame.display.set_caption("Mäng")
 
 # Ekraan
-ekraan_laius,ekraan_pikkus = 1620, 900
+ekraan_laius,ekraan_pikkus = 1155, 650
 ekraan_suurus = (ekraan_laius, ekraan_pikkus)  # kui suur on aken kus mäng toimub
-aken = pygame.display.set_mode(ekraan_suurus)
+aken = pygame.display.set_mode(ekraan_suurus,pygame.NOFRAME)
 time = 0
 
 # Mõned värvid
@@ -48,11 +48,11 @@ class Pintsel(Objekt):
         speed_x = mouse_x - self.pos[0]
         speed_y = mouse_y - self.pos[1]
         if speed_length  < 20:
-            jump_slow = 1
+            self.pos = [mouse_x, mouse_y]
         else:
-            jump_slow = 3
+            jump_slow = 3.75
             speed_length = math.sqrt(speed_x ** 2 + speed_y ** 2)
-        self.speed = (speed_x/jump_slow, speed_y/jump_slow)
+            self.speed = (speed_x/jump_slow, speed_y/jump_slow)
         super().render()
 #self.speed toimib nii et võtab asukoha kuhu saada tahab ja asukoha, kus on ja leieb nende vektori
 #,suunaga sinna poole kuhu saada tahetakse ja jagab selle jump slow-iga
@@ -103,7 +103,20 @@ while True:
             if event.button == pygame.BUTTON_LEFT:
                 joonistab = True
                 speed_length = float('inf') #lõppmatus
-                pintsel.pos = [ekraan_laius, ekraan_pikkus/2]
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                paremast = ekraan_laius-mouse_x
+                alumisest = ekraan_pikkus-mouse_y
+                a = [mouse_x,mouse_y,paremast,alumisest]
+                match a.index(min(a)):
+                    case 0:
+                        pintsel.pos = (0, mouse_y - pintsel.sprite.get_height())
+                    case 1:
+                        pintsel.pos = (mouse_x, 0)
+                    case 2:
+                        pintsel.pos = (ekraan_laius + pintsel.sprite.get_width(), mouse_y-pintsel.sprite.get_height())
+                    case 3:
+                        pintsel.pos = (mouse_x, ekraan_pikkus + pintsel.sprite.get_height())
+
         #hiire nupp üles
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == pygame.BUTTON_LEFT:
@@ -111,5 +124,5 @@ while True:
 
 
     # Uuendame ekraani
-    pygame.display.flip()
+    pygame.display.update()
     timer.tick(FPS)
