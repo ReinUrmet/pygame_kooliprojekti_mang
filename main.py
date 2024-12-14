@@ -1,6 +1,6 @@
 import pygame, sys, threading, math
 from pygame.transform import scale
-import keybinds as kb # file kus on kõik keybindid
+import functions_values as fv
 pygame.init()
 pygame.font.init()
 
@@ -33,8 +33,13 @@ class Objekt:
     def render(self):
         self.pos = [i + j for i, j in zip(self.pos, self.speed)]
         aken.blit(self.sprite, self.pos)
-    def __str__(self):
-        aken.blit(self.sprite, self.pos)
+    def change_sprite(self, sprite):
+        self.sprite = pygame.image.load("Sprites/"+sprite)
+        heightdivwidth = (self.sprite.get_height() / self.sprite.get_width())
+        if self.width is not None:
+            self.sprite = pygame.transform.scale(self.sprite,(self.width, heightdivwidth*self.width))
+    def flip_sprite(self):
+        self.sprite = pygame.transform.flip(self.sprite, True, False)
 # pmst kui  callid objekti siis objekt(sprite filei nimi, pos = (X,Y) /
 #kiirus, kui suureks teha sprite), ainuke nõutud on sprite file
 
@@ -54,24 +59,40 @@ class Pintsel(Objekt):
             speed_length = math.sqrt(speed_x ** 2 + speed_y ** 2)
             self.speed = (speed_x/jump_slow, speed_y/jump_slow)
         super().render()
+
 #self.speed toimib nii et võtab asukoha kuhu saada tahab ja asukoha, kus on ja leieb nende vektori
 #,suunaga sinna poole kuhu saada tahetakse ja jagab selle jump slow-iga
 
 class Värv(Objekt):
-    brush = pygame.Surface((10, 10))  #
-    brush_positions = []  # List to store all the brush positions drawn
+    def __init__(self, sprite, pos):
+        self.sprite = sprite
+        self.pos = pos
+        self.speed = [0,0]
 
 taust = Objekt('background.png', width=ekraan_laius)
 mikro = Objekt("mikro_side.png", pos=[100,100], width=100, base_speed=8)
 pintsel = Pintsel("pencil.png", width=200 )
 # Mängu tsükkel
 joonistab = False
+strokes = []
+brush_size,alpha = 0,0
 while True:
     taust.render()
     mikro.render()
     if joonistab:
         pintsel.render()
-        #pygame.draw.circle(aken, must, pintsel.pos, 20)
+
+        if speed_length < 20:
+            if brush_size < 10:
+                brush_size += 1
+            if alpha < 220:
+                alpha += 4
+            image = fv.get(brush_size, brush_size)
+            image.set_alpha(alpha)
+            strokes.append(Värv(image,pintsel.pos))
+
+    for stroke in strokes:
+        stroke.render()
     #iga kord kui on sündmus
     for event in pygame.event.get():
         #quit event
@@ -80,28 +101,33 @@ while True:
             sys.exit()
         #klaviatuuri nupp alla
         elif event.type == pygame.KEYDOWN:
-            if event.key in kb.up:
+            if event.key in fv.up:
+                mikro.change_sprite("mikro_away.png")
                 mikro.speed[1] -= mikro.base_speed
-            if event.key in kb.down:
+            if event.key in fv.down:
+                mikro.change_sprite("mikro_forward.png")
                 mikro.speed[1] += mikro.base_speed
-            if event.key in kb.left:
+            if event.key in fv.left:
+                mikro.change_sprite("mikro_side.png")
                 mikro.speed[0] -= mikro.base_speed
-            if event.key in kb.right:
+            if event.key in fv.right:
+                mikro.change_sprite("placeholder.png")
                 mikro.speed[0] += mikro.base_speed
         #klaviatuuri nupp üles
         elif event.type == pygame.KEYUP:
-            if event.key in kb.up:
+            if event.key in fv.up:
                 mikro.speed[1] += mikro.base_speed
-            if event.key in kb.down:
+            if event.key in fv.down:
                 mikro.speed[1] -= mikro.base_speed
-            if event.key in kb.left:
+            if event.key in fv.left:
                 mikro.speed[0] += mikro.base_speed
-            if event.key in kb.right:
+            if event.key in fv.right:
                 mikro.speed[0] -= mikro.base_speed
         #hiire nupp alla
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
                 joonistab = True
+                brush_size, alpha = 8,0
                 speed_length = float('inf') #lõppmatus
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 a = [mouse_x,mouse_y,ekraan_laius-mouse_x,ekraan_pikkus-mouse_y]
