@@ -11,7 +11,7 @@ FPS = 60
 pygame.display.set_caption("Mäng")
 
 # Ekraan
-ekraan_laius,ekraan_pikkus = 1155, 650
+ekraan_laius,ekraan_pikkus = 880, 700
 ekraan_suurus = (ekraan_laius, ekraan_pikkus)  # kui suur on aken kus mäng toimub
 aken = pygame.display.set_mode(ekraan_suurus,pygame.NOFRAME)
 time = 0
@@ -19,16 +19,16 @@ time = 0
 # Mõned värvid
 must = (0, 0, 0)
 valge = (255, 255, 255)
-punane = (255, 0, 0)
 
 class Objekt:
-    def __init__(self, sprite, pos = None, speed = None, scale = None, base_speed = None):
+    def __init__(self, sprite, pos = None, speed = None, width = None, base_speed = None):
         self.speed = speed or [0,0]
         self.pos = pos or [0, 0]
-        self.scale = scale
-        self.sprite = pygame.image.load(sprite)
-        if self.scale is not None:
-            self.sprite = pygame.transform.scale(self.sprite, self.scale)
+        self.sprite = pygame.image.load("Sprites/"+sprite)
+        self.width = width or self.sprite.get_width()
+        heightdivwidth = (self.sprite.get_height() / self.sprite.get_width())
+        if self.width is not None:
+            self.sprite = pygame.transform.scale(self.sprite,(self.width, heightdivwidth*self.width) )
         self.base_speed = base_speed or [0,0]
     def render(self):
         self.pos = [i + j for i, j in zip(self.pos, self.speed)]
@@ -58,13 +58,12 @@ class Pintsel(Objekt):
 #,suunaga sinna poole kuhu saada tahetakse ja jagab selle jump slow-iga
 
 class Värv(Objekt):
-    brush = pygame.Surface((10, 10))  # Brush size
-    brush.fill(punane)  # Color of the brush
+    brush = pygame.Surface((10, 10))  #
     brush_positions = []  # List to store all the brush positions drawn
 
-taust = Objekt('ART/background.jpg')
-mikro = Objekt("main_character.png", pos=[100,100], scale=(100,100), base_speed=8)
-pintsel = Pintsel("placeholder.png", scale=(100,100) )
+taust = Objekt('background.png', width=ekraan_laius)
+mikro = Objekt("mikro_side.png", pos=[100,100], width=100, base_speed=8)
+pintsel = Pintsel("pencil.png", width=200 )
 # Mängu tsükkel
 joonistab = False
 while True:
@@ -72,6 +71,7 @@ while True:
     mikro.render()
     if joonistab:
         pintsel.render()
+        #pygame.draw.circle(aken, must, pintsel.pos, 20)
     #iga kord kui on sündmus
     for event in pygame.event.get():
         #quit event
@@ -104,14 +104,12 @@ while True:
                 joonistab = True
                 speed_length = float('inf') #lõppmatus
                 mouse_x, mouse_y = pygame.mouse.get_pos()
-                paremast = ekraan_laius-mouse_x
-                alumisest = ekraan_pikkus-mouse_y
-                a = [mouse_x,mouse_y,paremast,alumisest]
+                a = [mouse_x,mouse_y,ekraan_laius-mouse_x,ekraan_pikkus-mouse_y]
                 match a.index(min(a)):
                     case 0:
-                        pintsel.pos = (0, mouse_y - pintsel.sprite.get_height())
+                        pintsel.pos = (-pintsel.sprite.get_width(), mouse_y - pintsel.sprite.get_height())
                     case 1:
-                        pintsel.pos = (mouse_x, 0)
+                        pintsel.pos = (mouse_x, -pintsel.sprite.get_height())
                     case 2:
                         pintsel.pos = (ekraan_laius + pintsel.sprite.get_width(), mouse_y-pintsel.sprite.get_height())
                     case 3:
