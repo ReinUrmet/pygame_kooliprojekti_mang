@@ -1,5 +1,6 @@
-import pygame, sys, threading
-
+import pygame, sys, threading, math
+from pygame.transform import scale
+import keybinds as kb # file kus on kõikkeybindid
 pygame.init()
 pygame.font.init()
 
@@ -10,7 +11,8 @@ FPS = 60
 pygame.display.set_caption("Mäng")
 
 # Ekraan
-ekraan_suurus = (1620, 900)  # kui suur on aken kus mäng toimub
+ekraan_laius,ekraan_pikkus = 1620, 900
+ekraan_suurus = (ekraan_laius, ekraan_pikkus)  # kui suur on aken kus mäng toimub
 aken = pygame.display.set_mode(ekraan_suurus)
 time = 0
 
@@ -20,33 +22,48 @@ valge = (255, 255, 255)
 punane = (255, 0, 0)
 
 class Objekt:
-    def __init__(self, sprite, pos = None, speed = None, scale = None):
+    def __init__(self, sprite, pos = None, speed = None, scale = None, base_speed = None):
         self.speed = speed or [0,0]
         self.pos = pos or [0, 0]
         self.scale = scale
         self.sprite = pygame.image.load(sprite)
         if self.scale is not None:
             self.sprite = pygame.transform.scale(self.sprite, self.scale)
+        self.base_speed = base_speed or [0,0]
     def render(self):
         self.pos = [i + j for i, j in zip(self.pos, self.speed)]
         aken.blit(self.sprite, self.pos)
     def __str__(self):
         aken.blit(self.sprite, self.pos)
-
+# pmst kui  callid objekti siis objekt(sprite filei nimi, pos = (X,Y) /
+#kiirus, kui suureks teha sprite), ainuke nõutud on sprite file
 
 
 class Pintsel(Objekt):
     def render(self):
+        global speed_length
         mouse_pos = pygame.mouse.get_pos()
-        self.pos = [mouse_pos[0], mouse_pos[1]-self.sprite.get_height()]
+        mouse_x = mouse_pos[0]
+        mouse_y = mouse_pos[1] -self.sprite.get_height() # selleks, et pintsli vasak alumine äär oleks kursori peal
+        speed_x = mouse_x - self.pos[0]
+        speed_y = mouse_y - self.pos[1]
+        if speed_length  < 20:
+            jump_slow = 1
+        else:
+            jump_slow = 3
+            speed_length = math.sqrt(speed_x ** 2 + speed_y ** 2)
+        self.speed = (speed_x/jump_slow, speed_y/jump_slow)
         super().render()
+#self.speed toimib nii et võtab asukoha kuhu saada tahab ja asukoha, kus on ja leieb nende vektori
+#,suunaga sinna poole kuhu saada tahetakse ja jagab selle jump slow-iga
+
 class Värv(Objekt):
     brush = pygame.Surface((10, 10))  # Brush size
     brush.fill(punane)  # Color of the brush
     brush_positions = []  # List to store all the brush positions drawn
 
 taust = Objekt('ART/background.jpg')
-mikro = Objekt("main_character.png", pos=[100,100], scale=(200,200))
+mikro = Objekt("main_character.png", pos=[100,100], scale=(100,100), base_speed=8)
 pintsel = Pintsel("placeholder.png", scale=(100,100) )
 # Mängu tsükkel
 joonistab = False
@@ -63,29 +80,35 @@ while True:
             sys.exit()
         #klaviatuuri nupp alla
         elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP or event.key == pygame.K_w:
-                mikro.speed[1] = -5
-            if event.key == pygame.K_DOWN or event.key == pygame.K_s:
-                mikro.speed[1] = 5
-            if event.key == pygame.K_LEFT or event.key == pygame.K_a:
-                mikro.speed[0] = -5
-            if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
-                mikro.speed[0] = 5
+            if event.key in kb.up:
+                mikro.speed[1] -= mikro.base_speed
+            if event.key in kb.down:
+                mikro.speed[1] += mikro.base_speed
+            if event.key in kb.left:
+                mikro.speed[0] -= mikro.base_speed
+            if event.key in kb.right:
+                mikro.speed[0] += mikro.base_speed
         #klaviatuuri nupp üles
         elif event.type == pygame.KEYUP:
-            if event.key in [pygame.K_UP, pygame.K_w, pygame.K_DOWN, pygame.K_s]:
-                mikro.speed[1] = 0
-            if event.key in [pygame.K_LEFT, pygame.K_a, pygame.K_RIGHT, pygame.K_d]:
-                mikro.speed[0] = 0
-
+            if event.key in kb.up:
+                mikro.speed[1] += mikro.base_speed
+            if event.key in kb.down:
+                mikro.speed[1] -= mikro.base_speed
+            if event.key in kb.left:
+                mikro.speed[0] += mikro.base_speed
+            if event.key in kb.right:
+                mikro.speed[0] -= mikro.base_speed
         #hiire nupp alla
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
                 joonistab = True
+                speed_length = float('inf') #lõppmatus
+                pintsel.pos = [ekraan_laius, ekraan_pikkus/2]
         #hiire nupp üles
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == pygame.BUTTON_LEFT:
                 joonistab = False
+
 
     # Uuendame ekraani
     pygame.display.flip()
