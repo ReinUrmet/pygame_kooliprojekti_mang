@@ -54,7 +54,7 @@ class Pintsel(Objekt):
             self.pos = [mouse_x, mouse_y]
         else:
             jump_slow = 3.75
-            speed_length = math.sqrt(speed_x ** 2 + speed_y ** 2)
+            speed_length =fv.get_vector_length([speed_x,speed_y])
             self.speed = (speed_x/jump_slow, speed_y/jump_slow)
         super().render()
 
@@ -76,7 +76,7 @@ vastane = Vastane("man_shoot.png",[700,300], speed=(-4,0), width=100, base_speed
 # Mängu tsükkel
 joonistab = False
 strokes = []
-walk_change, brush_size,brush_size2 = 0,0,0
+walk_change, brush_size,brush_size2,last_pos = 0,0,0,None
 while True:
 
     taust.render()
@@ -96,13 +96,25 @@ while True:
         pintsel.render()
 
         brush_size = int(brush_size2)
-        if brush_size < 10:
-            brush_size2 += 1
+        if brush_size < 5:
+            brush_size2 += 0.5
         if alpha < 220:
-            alpha += 5
+            alpha += 10
         image = fv.get(brush_size, brush_size)
         image.set_alpha(alpha)
-        strokes.append(Värv(image,pygame.mouse.get_pos()))
+        mouse_pos = pygame.mouse.get_pos()
+        if last_pos:
+            vektor = [i - j for i, j in zip(mouse_pos, last_pos)]
+            vektor_length = fv.get_vector_length(vektor)
+            spaces = int(vektor_length/brush_size)
+            for space in range(spaces):
+                space += 1
+                new_pos = [lp + v/brush_size * space for lp, v in zip(last_pos, vektor)]
+                #new_pos_length = fv.get_vector_length(new_pos)
+                #if vektor_length  < new_pos_length:
+                strokes.append(Värv(image,new_pos))
+        last_pos = mouse_pos
+        strokes.append(Värv(image,mouse_pos))
 
     for stroke in strokes:
         stroke.render()
@@ -140,7 +152,7 @@ while True:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
                 joonistab = True
-                brush_size2, alpha = 0,0
+                brush_size2, alpha = 1,0
                 speed_length = float('inf') #lõppmatus
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 a = [mouse_x,mouse_y,ekraan_laius-mouse_x,ekraan_pikkus-mouse_y]

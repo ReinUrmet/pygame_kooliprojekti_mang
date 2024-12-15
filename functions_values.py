@@ -1,4 +1,4 @@
-import pygame, random
+import pygame, random, math
 
 #keybinds
 up = [pygame.K_UP, pygame.K_w]
@@ -13,3 +13,5 @@ def get(width, height):
     x = random.randint(0, img.get_width() - width)
     y = random.randint(0, img.get_height() - height)
     return img.subsurface((x, y, width, height))
+def get_vector_length(vektor):
+    return math.sqrt(vektor[0]**2 + vektor[1]**2)
