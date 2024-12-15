@@ -21,19 +21,17 @@ must = (0, 0, 0)
 valge = (255, 255, 255)
 
 class Objekt:
-    def __init__(self, sprite, pos = None, speed = None, width = None, base_speed = None):
+    def __init__(self, sprite = None, pos = None, speed = None, width = None, base_speed = None):
         self.speed = speed or [0,0]
         self.pos = pos or [0, 0]
-        self.sprite = pygame.image.load("Sprites/"+sprite)
         self.width = width or self.sprite.get_width()
-        heightdivwidth = (self.sprite.get_height() / self.sprite.get_width())
-        if self.width is not None:
-            self.sprite = pygame.transform.scale(self.sprite,(self.width, heightdivwidth*self.width) )
+        self.change_sprite(sprite)
         self.base_speed = base_speed or [0,0]
     def render(self):
         self.pos = [i + j for i, j in zip(self.pos, self.speed)]
         aken.blit(self.sprite, self.pos)
-    def change_sprite(self, sprite):
+    def change_sprite(self, sprite = None):
+        sprite = sprite or "placeholder.png"
         self.sprite = pygame.image.load("Sprites/"+sprite)
         heightdivwidth = (self.sprite.get_height() / self.sprite.get_width())
         if self.width is not None:
@@ -68,28 +66,43 @@ class Värv(Objekt):
         self.sprite = sprite
         self.pos = pos
         self.speed = [0,0]
+class Vastane(Objekt):
+    pass
 
 taust = Objekt('background.png', width=ekraan_laius)
-mikro = Objekt("mikro_side.png", pos=[100,100], width=100, base_speed=8)
+mikro = Objekt("mikro_left.png", [100,300], width=100, base_speed=8)
 pintsel = Pintsel("pencil.png", width=200 )
+vastane = Vastane("man_shoot.png",[700,300], speed=(-4,0), width=100, base_speed=8)
 # Mängu tsükkel
 joonistab = False
 strokes = []
-brush_size,alpha = 0,0
+walk_change, brush_size,brush_size2 = 0,0,0
 while True:
+
     taust.render()
+    vastane.render()
+    if abs(vastane.speed[0]) > 0:
+        walk_change += 1
+        if walk_change > 10:
+            vastane.change_sprite('man_side2.png')
+        else:
+            vastane.change_sprite('man_side.png')
+        if walk_change > 20:
+            walk_change = 0
+    else:
+        vastane.change_sprite('man_shoot.png')
     mikro.render()
     if joonistab:
         pintsel.render()
 
-        if speed_length < 20:
-            if brush_size < 10:
-                brush_size += 1
-            if alpha < 220:
-                alpha += 4
-            image = fv.get(brush_size, brush_size)
-            image.set_alpha(alpha)
-            strokes.append(Värv(image,pintsel.pos))
+        brush_size = int(brush_size2)
+        if brush_size < 10:
+            brush_size2 += 1
+        if alpha < 220:
+            alpha += 5
+        image = fv.get(brush_size, brush_size)
+        image.set_alpha(alpha)
+        strokes.append(Värv(image,pygame.mouse.get_pos()))
 
     for stroke in strokes:
         stroke.render()
@@ -108,10 +121,10 @@ while True:
                 mikro.change_sprite("mikro_forward.png")
                 mikro.speed[1] += mikro.base_speed
             if event.key in fv.left:
-                mikro.change_sprite("mikro_side.png")
+                mikro.change_sprite("mikro_left.png")
                 mikro.speed[0] -= mikro.base_speed
             if event.key in fv.right:
-                mikro.change_sprite("placeholder.png")
+                mikro.change_sprite("mikro_right.png")
                 mikro.speed[0] += mikro.base_speed
         #klaviatuuri nupp üles
         elif event.type == pygame.KEYUP:
@@ -127,7 +140,7 @@ while True:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
                 joonistab = True
-                brush_size, alpha = 8,0
+                brush_size2, alpha = 0,0
                 speed_length = float('inf') #lõppmatus
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 a = [mouse_x,mouse_y,ekraan_laius-mouse_x,ekraan_pikkus-mouse_y]
