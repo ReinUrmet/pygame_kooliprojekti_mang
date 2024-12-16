@@ -100,7 +100,7 @@ while True:
         brush_size = int(brush_size2)
         if brush_size < 5:
             brush_size2 += 0.5
-        if alpha < 220:
+        if alpha < 180:
             alpha += 10
         image = fv.get(brush_size, brush_size)
         image.set_alpha(alpha)
@@ -108,14 +108,15 @@ while True:
         if last_pos:
             vektor = [i - j for i, j in zip(mouse_pos, last_pos)]
             vektor_length = fv.get_vector_length(vektor)
-            spaces = int(vektor_length/brush_size)
-            for space in range(spaces):
-                space += 1
-                new_pos = [lp + v/brush_size * space for lp, v in zip(last_pos, vektor)]
-                #new_pos_length = fv.get_vector_length(new_pos)
-                #if vektor_length > new_pos_length:
-                strokes.append(Värv(image,new_pos))
+            spaces = max(1, int(vektor_length / brush_size))+1
+
+            for space in range(1, spaces + 1):
+                factor = space / spaces
+                new_pos = [lp + v * factor for lp, v in zip(last_pos, vektor)]
+                strokes.append(Värv(image, new_pos))
+
         last_pos = mouse_pos
+
         strokes.append(Värv(image,mouse_pos))
 
     for stroke in strokes:
@@ -154,7 +155,7 @@ while True:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
                 joonistab = True
-                brush_size2, alpha = 1,0
+                brush_size2, alpha = 2,0
                 speed_length = float('inf') #lõppmatus
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 a = [mouse_x,mouse_y,ekraan_laius-mouse_x,ekraan_pikkus-mouse_y]
