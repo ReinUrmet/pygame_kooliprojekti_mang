@@ -72,13 +72,15 @@ class Vastane(Objekt):
 taust = Objekt('background.png', width=ekraan_laius)
 mikro = Objekt("mikro_left.png", [100,300], width=100, base_speed=8)
 pintsel = Pintsel("pencil.png", width=200 )
-vastane = Vastane("man_shoot.png",[700,300], speed=(-4,0), width=100, base_speed=8)
+vastane = Vastane("man_shoot.png",[700,300], speed=(-2.5,0), width=100, base_speed=8)
 # Mängu tsükkel
 joonistab = False
 strokes = []
 walk_change, brush_size,brush_size2,last_pos = 0,0,0,None
 while True:
-
+    time +=1
+    if time == 120:
+        vastane.speed = [0,0]
     taust.render()
     vastane.render()
     if abs(vastane.speed[0]) > 0:
@@ -111,7 +113,7 @@ while True:
                 space += 1
                 new_pos = [lp + v/brush_size * space for lp, v in zip(last_pos, vektor)]
                 #new_pos_length = fv.get_vector_length(new_pos)
-                #if vektor_length  < new_pos_length:
+                #if vektor_length > new_pos_length:
                 strokes.append(Värv(image,new_pos))
         last_pos = mouse_pos
         strokes.append(Värv(image,mouse_pos))
