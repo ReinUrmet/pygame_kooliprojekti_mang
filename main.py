@@ -61,6 +61,7 @@ class Pintsel(Objekt):
 #self.speed toimib nii et võtab asukoha kuhu saada tahab ja asukoha, kus on ja leieb nende vektori
 #,suunaga sinna poole kuhu saada tahetakse ja jagab selle jump slow-iga
 
+
 class Värv(Objekt):
     def __init__(self, sprite, pos):
         self.sprite = sprite
@@ -77,12 +78,16 @@ vastane = Vastane("man_shoot.png",[700,300], speed=(-2.5,0), width=100, base_spe
 joonistab = False
 strokes = []
 walk_change, brush_size,brush_size2,last_pos = 0,0,0,None
+to_render = []
 while True:
+
     time +=1
+    #TODO: liigutada see vastasesse või objekti
     if time == 120:
         vastane.speed = [0,0]
     taust.render()
-    vastane.render()
+    to_render.append(vastane)
+    to_render.append(mikro)
     if abs(vastane.speed[0]) > 0:
         walk_change += 1
         if walk_change > 10:
@@ -93,22 +98,21 @@ while True:
             walk_change = 0
     else:
         vastane.change_sprite('man_shoot.png')
-    mikro.render()
     if joonistab:
         pintsel.render()
 
         brush_size = int(brush_size2)
         if brush_size < 5:
             brush_size2 += 0.5
-        if alpha < 180:
+        if alpha < 100:
             alpha += 10
-        image = fv.get(brush_size, brush_size)
-        image.set_alpha(alpha)
+        image = fv.pencil_sprite(brush_size, brush_size)
+        #image = pygame.transform.scale(pygame.image.load("Sprites/draw_alpha3.png"), (brush_size, brush_size)).set_alpha(alpha)
         mouse_pos = pygame.mouse.get_pos()
         if last_pos:
             vektor = [i - j for i, j in zip(mouse_pos, last_pos)]
             vektor_length = fv.get_vector_length(vektor)
-            spaces = max(1, int(vektor_length / brush_size))+1
+            spaces = max(1, int(vektor_length / brush_size*3))
 
             for space in range(1, spaces + 1):
                 factor = space / spaces
@@ -117,10 +121,10 @@ while True:
 
         last_pos = mouse_pos
 
-        strokes.append(Värv(image,mouse_pos))
-
+    fv.big_render(to_render)
     for stroke in strokes:
         stroke.render()
+    to_render = []
     #iga kord kui on sündmus
     for event in pygame.event.get():
         #quit event
@@ -129,6 +133,7 @@ while True:
             sys.exit()
         #klaviatuuri nupp alla
         elif event.type == pygame.KEYDOWN:
+            #TODO: sptiteide vahetamiseks võiks objekt files mingi funktsiooni teha
             if event.key in fv.up:
                 mikro.change_sprite("mikro_away.png")
                 mikro.speed[1] -= mikro.base_speed
@@ -155,7 +160,7 @@ while True:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
                 joonistab = True
-                brush_size2, alpha = 2,0
+                brush_size2, alpha, last_pos = 1,0, None
                 speed_length = float('inf') #lõppmatus
                 mouse_x, mouse_y = pygame.mouse.get_pos()
                 a = [mouse_x,mouse_y,ekraan_laius-mouse_x,ekraan_pikkus-mouse_y]
