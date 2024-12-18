@@ -42,7 +42,7 @@ class Enemy(Objekt):
                 self.shoot_timer = 0
         else:
             self.death_timer += 1
-            if self.death_timer >= FPS * 3:  # 3 seconds
+            if self.death_timer >= FPS * 1:  # 3 seconds
                 return True  # Mark for removal
         return False
 
@@ -68,7 +68,7 @@ class Enemy(Objekt):
         self.speed = [0, 0]
         self.current_action = "shoot"
 
-        bullet_speed = 5
+        bullet_speed = 11
         dx = player_pos[0] - self.rect.centerx
         dy = player_pos[1] - self.rect.centery
         distance = max(1, (dx**2 + dy**2) ** 0.5)
