@@ -1,44 +1,113 @@
 import pygame
 from object import Objekt
+from bullets import Bullet
+
+FPS = 60
 
 class Enemy(Objekt):
-    def __init__(self, x, y, width, height, color=(255, 0, 0), pos=None, screen=None):
-        # Initialize the parent class (Objekt)
-        super().__init__(sprite=None, pos=[x, y], speed=[0, 0], width=width)
-        
-        # Create a surface for the enemy
-        self.image = pygame.Surface((width, height))
-        self.image.fill(color)  # Set initial color of the enemy
-        
-        # Set the rectangle for positioning
-        self.rect = self.image.get_rect()
-        self.rect.x = x
-        self.rect.y = y
-        
-        # Additional enemy-specific attributes
-        self.direction = None
-        self.pos = pos or [0, 0]
-        
-        # Reference to the screen for rendering
+    def __init__(self, x, y, width, height, color=(255, 0, 0), pos=None, *, screen=None):
+        super().__init__(sprite="man_side.png", pos=[x, y], speed=[2, 2], width=width)
+        self.rect = self.sprite.get_rect()
+        self.rect.topleft = (x, y)
+        self.color = color
         self.screen = screen
+        self.shoot_timer = 0
+        self.bullets = []
+        self.walk_change = 0
+        self.current_action = "walk"
+        self.original_speed = self.speed[:]
+        self.dead = False
+        self.death_timer = 0
+
+    def update(self, player_pos, screen_width, screen_height):
+        """Update enemy logic, movement, and animations."""
+        if not self.dead:  # Skip updates if the enemy is dead
+            if self.current_action == "walk":
+                self.rect.x += self.speed[0]
+                self.rect.y += self.speed[1]
+
+                # Reverse direction if hitting screen edges
+                if self.rect.left <= 0 or self.rect.right >= screen_width:
+                    self.speed[0] *= -1
+                if self.rect.top <= 0 or self.rect.bottom >= screen_height:
+                    self.speed[1] *= -1
+
+            # Handle animations
+            self.handle_animation()
+
+            # Shooting logic
+            self.shoot_timer += 1
+            if self.shoot_timer >= 120:
+                self.shoot(player_pos)
+                self.shoot_timer = 0
+        else:
+            self.death_timer += 1
+            if self.death_timer >= FPS * 3:  # 3 seconds
+                return True  # Mark for removal
+        return False
+
+    def handle_animation(self):
+        """Update the enemy's animation based on its action."""
+        if self.dead:
+            self.change_sprite("man_death.png")  # Death animation frame
+        elif self.current_action == "walk" and abs(self.speed[0]) > 0:
+            self.walk_change += 1
+            if self.walk_change <= 10:
+                self.change_sprite("man_side.png")
+            elif self.walk_change <= 20:
+                self.change_sprite("man_side2.png")
+            if self.walk_change > 20:
+                self.walk_change = 0
+        elif self.current_action == "shoot":
+            self.change_sprite("man_shoot.png")
+
+    def shoot(self, player_pos):
+        """Shoot a bullet toward the player's position."""
+        if self.dead:
+            return
+        self.speed = [0, 0]
+        self.current_action = "shoot"
+
+        bullet_speed = 5
+        dx = player_pos[0] - self.rect.centerx
+        dy = player_pos[1] - self.rect.centery
+        distance = max(1, (dx**2 + dy**2) ** 0.5)
+        speed_x = (dx / distance) * bullet_speed
+        speed_y = (dy / distance) * bullet_speed
+        new_bullet = Bullet(self.rect.centerx, self.rect.centery, speed_x, speed_y)
+        self.bullets.append(new_bullet)
+
+        pygame.time.set_timer(pygame.USEREVENT, 300)
+
+    def handle_shoot_event(self):
+        """Resume movement after shooting animation."""
+        if not self.dead:
+            self.speed = self.original_speed[:]
+            self.current_action = "walk"
 
     def render(self):
-        self.screen.blit(self.image, self.rect.topleft)  # Draw the enemy using self.image
+        """Draw the enemy and its bullets."""
+        if self.dead:
+            pygame.draw.rect(self.screen, self.color, self.rect)
+        else:
+            self.screen.blit(self.sprite, self.rect.topleft)
+            for bullet in self.bullets:
+                bullet.render(self.screen)
 
     def play_animation(self, direction):
-        # Depending on the direction, change the animation
+        """Change the enemy's appearance based on the cutting direction."""
         if direction == 'left':
-            self.image.fill((255, 0, 0))  # Red for left
+            self.color = (255, 0, 0)  # Red for left
         elif direction == 'right':
-            self.image.fill((0, 255, 0))  # Green for right
+            self.color = (0, 255, 0)  # Green for right
         elif direction == 'up':
-            self.image.fill((0, 0, 255))  # Blue for up
+            self.color = (0, 0, 255)  # Blue for up
         elif direction == 'down':
-            self.image.fill((255, 255, 0))  # Yellow for down
-        else:
-            self.image.fill((255, 0, 0))  # Default red
+            self.color = (255, 255, 0)  # Yellow for down
+        self.dead = True  # Mark the enemy as dead
 
     def calculate_direction(self, strokes):
+        """Calculate the direction of the line drawn by the pencil."""
         if not strokes:
             return None
 
@@ -50,17 +119,6 @@ class Enemy(Objekt):
         print(f"Start: {start_point}, End: {end_point}, dx: {dx}, dy: {dy}")  # Debugging
 
         if abs(dx) > abs(dy):  # Horizontal line
-            if dx > 0:
-                print("Direction: right")  # Debug
-                return 'right'
-            else:
-                print("Direction: left")  # Debug
-                return 'left'
-            
+            return 'right' if dx > 0 else 'left'
         else:  # Vertical line
-            if dy > 0:
-                print("Direction: down")  # Debug
-                return 'down'
-            else:
-                print("Direction: up")  # Debug
-                return 'up'
+            return 'down' if dy > 0 else 'up'
