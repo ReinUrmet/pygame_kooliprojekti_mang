@@ -5,8 +5,8 @@ from pygame.transform import scale
 import functions_values as fv
 from object import Objekt
 from enemy import Enemy
-from main_menu import main_menu
 from Pintsel_Värv import Pintsel, Värv
+from main_menu import main_menu
 
 pygame.init()
 pygame.font.init()
@@ -26,12 +26,22 @@ time = 0
 # Mõned värvid
 must = (0, 0, 0)
 valge = (255, 255, 255)
+roheline = (0, 255, 0)
+punane = (255, 0, 0)
 
+
+# Põhimenüü käivitamine
+action = main_menu(aken)
+if action == "start_game":
+    print("Mäng algab!")
+else:
+    pygame.quit()
+    sys.exit()
+
+# Mängu objektid
 taust = Objekt('background.png', width=ekraan_laius)
 mikro = Objekt("mikro_left.png", [100, 300], width=100, base_speed=8)
 pintsel = Pintsel("pencil.png", width=200)
-
-# Create an enemy instance
 vastane = Enemy(700, 300, 100, 200, (255, 0, 0), [500, 300], screen=aken)
 
 # Mängu tsükkel
@@ -40,13 +50,14 @@ strokes = []
 walk_change, brush_size, brush_size2, last_pos = 0, 0, 0, None
 to_render = []
 alpha = 0  
+speed_length = float('inf')
 
 while True:
     time += 1
     taust.render()
     to_render.append(mikro)
     to_render.append(vastane)
-    
+
     if joonistab:
         pintsel.render()
 
@@ -76,7 +87,7 @@ while True:
     for stroke in strokes:
         stroke.render()
     to_render = []
-    
+
     # iga kord kui on sündmus
     for event in pygame.event.get():
         # quit event
