@@ -105,12 +105,14 @@ def pause_menu(aken):
     aken.blit(quit_text, quit_rect)
 
     def draw_mute_button():
-        """Draw the mute/unmute button and return its rect."""
+        mute_rect = pygame.Rect(30, 30, 180, 60)  
+        pygame.draw.rect(aken, black, mute_rect)  
+        pygame.draw.rect(aken, gray, mute_rect, border_radius=10) 
+        
         mute_text = button_font.render(
             "MUTE", True, white) if pygame.mixer.music.get_volume() > 0 else button_font.render("UNMUTE", True, white)
-        mute_rect = mute_text.get_rect(topleft=(20, 20))
-        pygame.draw.rect(aken, gray, mute_rect.inflate(20, 10), border_radius=10)
-        aken.blit(mute_text, mute_rect)
+        text_rect = mute_text.get_rect(center=mute_rect.center)
+        aken.blit(mute_text, text_rect)
         return mute_rect
 
     mute_rect = draw_mute_button()
@@ -274,7 +276,7 @@ while True:
     aken.blit(health_text, health_rect)
 
     # Uuendab ja joonistab kõik vaenlased
-    for vastane in enemies[:]:  # Kasutab nimekirja koopiat ohutuks iteratsiooniks
+    for vastane in enemies[:]: 
         if vastane.update(mikro.pos, ekraan_laius, ekraan_pikkus):
             enemies.remove(vastane)
         else:
@@ -396,6 +398,7 @@ while True:
             if event.key in fv.right:
                 mikro.speed[0] -= mikro.base_speed
 
+
         # Hiire nupp alla
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == pygame.BUTTON_LEFT:
@@ -430,7 +433,6 @@ while True:
 
                 if collided:  # Kontrollib suunda ainult kokkupõrke korral
                     direction = vastane.calculate_direction(strokes)
-                    print(f"Cut direction: {direction}")  # Silumine
 
                     if direction:
                         vastane.play_animation(direction)  # Muudab välimust vastavalt suunale

@@ -1,3 +1,4 @@
+import random
 import pygame
 from object import Objekt
 from bullets import Bullet
@@ -6,7 +7,7 @@ FPS = 60
 
 class Enemy(Objekt):
     def __init__(self, x, y, width, height, color=(255, 0, 0), pos=None, *, screen=None):
-        super().__init__(sprite="man_side.png", pos=[x, y], speed=[2, 2], width=width)
+        super().__init__(sprite="man_side.png", pos=[x, y], speed=[0, 0], width=width)
         self.rect = self.sprite.get_rect()
         self.rect.topleft = (x, y)
         self.color = color
@@ -15,9 +16,16 @@ class Enemy(Objekt):
         self.bullets = []
         self.walk_change = 0
         self.current_action = "walk"
-        self.original_speed = self.speed[:]
+        self.original_speed = self._generate_random_speed()  # Random initial speed
+        self.speed = self.original_speed[:]
         self.dead = False
         self.death_timer = 0
+
+    def _generate_random_speed(self):
+        """Generate a random initial speed for the enemy."""
+        speed_x = random.choice([-2, -1, 1, 2])  # Random horizontal speed
+        speed_y = random.choice([-2, -1, 1, 2])  # Random vertical speed
+        return [speed_x, speed_y]
 
     def update(self, player_pos, screen_width, screen_height):
         """Update enemy logic, movement, and animations."""
@@ -32,6 +40,15 @@ class Enemy(Objekt):
                 if self.rect.top <= 0 or self.rect.bottom >= screen_height:
                     self.speed[1] *= -1
 
+                # Slight random changes to the speed to add variation
+                if random.random() < 0.05:  # 5% chance to change speed
+                    self.speed[0] += random.choice([-1, 1])
+                    self.speed[1] += random.choice([-1, 1])
+
+                # Clamp speeds to a maximum
+                self.speed[0] = max(-3, min(self.speed[0], 3))
+                self.speed[1] = max(-3, min(self.speed[1], 3))
+
             # Handle animations
             self.handle_animation()
 
@@ -42,7 +59,7 @@ class Enemy(Objekt):
                 self.shoot_timer = 0
         else:
             self.death_timer += 1
-            if self.death_timer >= FPS * 1:  # 3 seconds
+            if self.death_timer >= FPS * 1:  # 1 second
                 return True  # Mark for removal
         return False
 
@@ -115,8 +132,6 @@ class Enemy(Objekt):
         end_point = strokes[-1].pos
         dx = end_point[0] - start_point[0]
         dy = end_point[1] - start_point[1]
-
-        print(f"Start: {start_point}, End: {end_point}, dx: {dx}, dy: {dy}")  # Debugging
 
         if abs(dx) > abs(dy):  # Horizontal line
             return 'right' if dx > 0 else 'left'
